@@ -3,15 +3,17 @@ package otf
 import (
 	"encoding/binary"
 	"io"
+	"bytes"
 )
 
 func (_ *Head) Tag() TAG {
 	return TAG_HEAD
 }
 
-func (_ *Head) CheckSum() ULONG {
-	// FIXME: not impremented
-	return 0;
+func (t *Head) CheckSum() ULONG {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, t)
+	return calcCheckSum(buf.Bytes())
 }
 
 func (t *Head) Len() ULONG {
@@ -45,4 +47,5 @@ type Head struct {
 }
 
 var TAG_HEAD = TAG{'h', 'e', 'a', 'd'}
+
 const HEAD_MAGIC_NUMBER ULONG = 0x5F0F3CF5

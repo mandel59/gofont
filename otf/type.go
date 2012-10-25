@@ -17,7 +17,7 @@ func (n USHORT) Log2() (USHORT, error) {
 			return i, nil
 		}
 	}
-	return 0, errors.New("USHORT Log2: given 0")
+	return 0, errors.New("USHORT Log2: Invarid anti-logarithm")
 }
 
 // Open Font Format Standard section 4.3

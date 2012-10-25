@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"bytes"
 	"encoding/binary"
 	"io"
 )
@@ -12,10 +13,24 @@ func calcCheckSum(t []byte) (s ULONG) {
 			copy(u[0:len(t)-i], t[i:len(t)])
 			s += ULONG(binary.BigEndian.Uint32(u[:]))
 		} else {
-			s += ULONG(binary.BigEndian.Uint32(t[i:i+4]))
+			s += ULONG(binary.BigEndian.Uint32(t[i : i+4]))
 		}
 	}
 	return
+}
+
+func NewTable(t TAG, b []byte) Table {
+	switch t {
+	case TAG_HEAD:
+		head := new(Head)
+		buf := bytes.NewBuffer(b)
+		err := binary.Read(buf, binary.BigEndian, head)
+		if err != nil {
+			break
+		}
+		return Table(head)
+	}
+	return Table(&UnknownTable{t, b})
 }
 
 type Table interface {
