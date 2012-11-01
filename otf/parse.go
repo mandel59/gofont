@@ -2,8 +2,8 @@ package otf
 
 import (
 	"encoding/binary"
-	"sort"
 	"io"
+	"sort"
 )
 
 func ReadOTF(r io.Reader) (otf *OTF, err error) {
@@ -26,9 +26,9 @@ func ReadOTF(r io.Reader) (otf *OTF, err error) {
 			m = n
 		}
 	}
-	offset := binary.Size(otf.SfntHeader) + binary.Size(otf.TableRecords);
+	offset := binary.Size(otf.SfntHeader) + binary.Size(otf.TableRecords)
 	sort.Sort(byOffsetSort{otf.TableRecords})
-	blob := make([]byte, int(m) - offset)
+	blob := make([]byte, int(m)-offset)
 	_, err = r.Read(blob)
 	if err != nil {
 		return

@@ -1,8 +1,8 @@
 package otf
 
 import (
-	"encoding/binary"
 	"bytes"
+	"encoding/binary"
 )
 
 func (_ *Head) Tag() TAG {

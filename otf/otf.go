@@ -1,9 +1,9 @@
 package otf
 
 import (
+	"bytes"
 	"encoding/binary"
 	"io"
-	"bytes"
 	"sort"
 )
 
@@ -39,7 +39,7 @@ func (o OTF) Write(w io.Writer) error {
 func (o OTF) Setup() {
 	o.SfntHeader.Set(VERSION_1_0, USHORT(len(o.Tables)))
 	o.TableRecords = make(sliceTableRecord, len(o.Tables))
-	offset := 12 + 16 * ULONG(len(o.Tables))
+	offset := 12 + 16*ULONG(len(o.Tables))
 	var head int
 	var sum ULONG
 	for i, t := range o.Tables {
@@ -69,11 +69,13 @@ func (o OTF) Setup() {
 	sum += ULONG(o.SfntHeader.SfntVersion)
 	sum += ULONG(o.SfntHeader.NumTables)<<8 + ULONG(o.SfntHeader.SearchRange)
 	sum += ULONG(o.SfntHeader.EntrySelector)<<8 + ULONG(o.SfntHeader.RangeShift)
-	o.Tables[head].(*Head).CheckSumAdjustment = 0xB1B0AFBA - sum
+	o.Tables[head].(*Head).CheckSumAdjustment = checkSumAdjustmentMagic - sum
 }
 
 type OTF struct {
-	SfntHeader  SfntHeader
+	SfntHeader   SfntHeader
 	TableRecords sliceTableRecord
 	Tables       []Table
 }
+
+const checkSumAdjustmentMagic = 0xB1B0AFBA
