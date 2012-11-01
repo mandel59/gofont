@@ -1,25 +1,5 @@
 package otf
 
-import "errors"
-
-func (n USHORT) MaxPowerOf2() USHORT {
-	l := n
-	for i := 0; i < 15; i++ {
-		n >>= 1
-		l &^= n
-	}
-	return l
-}
-
-func (n USHORT) Log2() (USHORT, error) {
-	for i := USHORT(15); i >= 0; i-- {
-		if n&(1<<i) != 0 {
-			return i, nil
-		}
-	}
-	return 0, errors.New("USHORT Log2: Invarid anti-logarithm")
-}
-
 // Open Font Format Standard section 4.3
 type (
 	BYTE         uint8

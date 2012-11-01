@@ -2,7 +2,6 @@ package otf
 
 import (
 	"encoding/binary"
-	"io"
 	"bytes"
 )
 
@@ -10,20 +9,14 @@ func (_ *Head) Tag() TAG {
 	return TAG_HEAD
 }
 
-func (t *Head) CheckSum() ULONG {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, t)
-	return calcCheckSum(buf.Bytes())
-}
-
 func (t *Head) Len() ULONG {
 	return ULONG(binary.Size(t))
 }
 
-func (t *Head) WriteTo(w io.Writer) (n int, err error) {
-	n = binary.Size(t)
-	err = binary.Write(w, binary.BigEndian, t)
-	return
+func (t *Head) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, t)
+	return buf.Bytes()
 }
 
 type Head struct {
