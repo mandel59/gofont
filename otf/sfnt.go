@@ -16,22 +16,14 @@ func writeSfntHeader(f *SFNT, w io.WriterAt, offset int64) (ULONG, int64, error)
 	if _, err := w.WriteAt(bytes, offset); err != nil {
 		return 0, 0, err
 	}
-	return calcCheckSum(bytes), int64(len(bytes)), nil
+	return calcCheckSum(bytes), offset + int64(len(bytes)), nil
 }
 
-func (f *SFNT) Generate(w io.WriterAt) error {
-	total, dictOffset, err := writeSfntHeader(f, w, 0)
-	if err != nil {
-		return err
-	}
-	// write tables
-	numTables := len(f.Table)
-	entry := make([]OffsetEntry, numTables)
-	offset := roundUp(dictOffset + int64(binary.Size(entry)))
-	tag := make(sort.StringSlice, 0)
-	entryMap := make(map[string]*OffsetEntry)
+func writeTables(table []Table, w io.WriterAt, offset int64) (map[Table]*OffsetEntry, []int64, ULONG, error) {
+	total := ULONG(0)
+	entryMap := make(map[Table]*OffsetEntry)
 	head := make([]int64, 0)
-	for _, v := range f.Table {
+	for _, v := range table {
 		t := v.Tag()
 		ts := string(t[:])
 		if ts == "head" {
@@ -43,10 +35,9 @@ func (f *SFNT) Generate(w io.WriterAt) error {
 		checksum := calcCheckSum(bytes)
 		length := len(bytes)
 		if _, err := w.WriteAt(bytes, offset); err != nil {
-			return err
+			return nil, nil, 0, err
 		}
-		tag = append(tag, ts)
-		entryMap[ts] = &OffsetEntry{
+		entryMap[v] = &OffsetEntry{
 			t,
 			checksum,
 			ULONG(offset),
@@ -55,24 +46,52 @@ func (f *SFNT) Generate(w io.WriterAt) error {
 		offset = roundUp(offset + int64(length))
 		total += checksum
 	}
+	return entryMap, head, total, nil
+}
+
+func checkSumAdjust(w io.WriterAt, head []int64, checksum ULONG) {
+	adjust := make([]byte, 4)
+	binary.BigEndian.PutUint32(adjust, uint32(checkSumAdjustmentMagic-checksum))
+	for _, offs := range head {
+		w.WriteAt(adjust, offs+8)
+	}
+}
+
+func (f *SFNT) Generate(w io.WriterAt) error {
+	total, dictOffset, err := writeSfntHeader(f, w, 0)
+	if err != nil {
+		return err
+	}
+	numTables := len(f.Table)
+	entry := make([]OffsetEntry, numTables)
+	offset := roundUp(dictOffset + int64(binary.Size(entry)))
+	table := make([]Table, 0)
+	for _, v := range f.Table {
+		table = append(table, v)
+	}
+	entryMap, head, total, err := writeTables(table, w, offset)
+	if err != nil {
+		return err
+	}
 	// write table directory
 	offset = dictOffset
-	buf := new(bytes.Buffer)
+	tag := make(sort.StringSlice, 0)
+	for _, v := range f.Table {
+		t := v.Tag()
+		tag = append(tag, string(t[:]))
+	}
 	sort.Sort(tag)
 	for i, ts := range tag {
-		entry[i] = *(entryMap[ts])
+		entry[i] = *(entryMap[f.Table[ts]])
 	}
+	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, entry)
 	bytes := buf.Bytes()
 	if _, err := w.WriteAt(bytes, offset); err != nil {
 		return err
 	}
 	total += calcCheckSum(bytes)
-	adjust := make([]byte, 4)
-	binary.BigEndian.PutUint32(adjust, uint32(checkSumAdjustmentMagic-total))
-	for _, offs := range head {
-		w.WriteAt(adjust, offs+8)
-	}
+	checkSumAdjust(w, head, total)
 	return nil
 }
 
