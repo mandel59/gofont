@@ -1,8 +1,13 @@
 package otf
 
+import (
+	"io"
+	"io/ioutil"
+)
+
 type DefaultTable struct {
-	tag  TAG
-	body []byte
+	tag    TAG
+	reader *io.SectionReader
 }
 
 func (t *DefaultTable) Tag() TAG {
@@ -10,5 +15,7 @@ func (t *DefaultTable) Tag() TAG {
 }
 
 func (t *DefaultTable) Bytes() []byte {
-	return t.body
+	t.reader.Seek(0, 0)
+	bytes, _ := ioutil.ReadAll(t.reader)
+	return bytes
 }

@@ -1,22 +1,22 @@
 package otf
 
 import (
-	"bytes"
 	"encoding/binary"
+	"io"
 )
 
-func NewTable(t TAG, b []byte) Table {
+func NewTable(t TAG, r *io.SectionReader) Table {
 	switch t {
 	case TAG_HEAD:
 		head := new(Head)
-		buf := bytes.NewBuffer(b)
-		err := binary.Read(buf, binary.BigEndian, head)
+		r.Seek(0, 0)
+		err := binary.Read(r, binary.BigEndian, head)
 		if err != nil {
 			break
 		}
 		return Table(head)
 	}
-	return Table(&DefaultTable{t, b})
+	return Table(&DefaultTable{t, r})
 }
 
 type Table interface {

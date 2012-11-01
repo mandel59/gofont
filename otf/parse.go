@@ -1,27 +1,28 @@
 package otf
 
 import (
-	"bytes"
 	"encoding/binary"
 	"io"
-	"io/ioutil"
 )
 
-func parseTTC(blob []byte) (OTF, error) {
-	buf := bytes.NewBuffer(blob)
+func parseTTC(r io.ReaderAt) (OTF, error) {
 	ttcHeader := new(TTCHeader)
-	err := binary.Read(buf, binary.BigEndian, ttcHeader)
-	if err != nil {
+	ttcHeaderSize := int64(binary.Size(ttcHeader))
+	sr := io.NewSectionReader(r, 0, ttcHeaderSize)
+	if err := binary.Read(sr, binary.BigEndian, ttcHeader); err != nil {
 		return nil, err
 	}
 	numFonts := ttcHeader.NumFonts
 	offsetTable := make(TTCOffsetTable, numFonts)
-	if err := binary.Read(buf, binary.BigEndian, offsetTable); err != nil {
+	sr = io.NewSectionReader(r, ttcHeaderSize, int64(binary.Size(offsetTable)))
+	if err := binary.Read(sr, binary.BigEndian, offsetTable); err != nil {
 		return nil, err
 	}
 	o := make([]*SFNT, numFonts)
+	table := make(map[int64]Table)
 	for i, offset := range offsetTable {
-		o[i], err = parseSFNT(blob[offset:], blob)
+		var err error
+		o[i], err = parseSFNT(r, int64(offset), table)
 		if err != nil {
 			return nil, err
 		}
@@ -29,37 +30,45 @@ func parseTTC(blob []byte) (OTF, error) {
 	return o, nil
 }
 
-func parseSFNT(header, blob []byte) (*SFNT, error) {
+func parseSFNT(r io.ReaderAt, headerOffset int64, table map[int64]Table) (*SFNT, error) {
 	o := new(SFNT)
-	buf := bytes.NewBuffer(header)
-	err := binary.Read(buf, binary.BigEndian, &o.SfntHeader)
-	if err != nil {
+	headerSize := int64(binary.Size(o.Header))
+	sr := io.NewSectionReader(r, headerOffset, headerSize)
+	if err := binary.Read(sr, binary.BigEndian, &o.Header); err != nil {
 		return nil, err
 	}
-	numTables := o.SfntHeader.NumTables
+	numTables := o.Header.NumTables
 	offsetTable := make([]OffsetEntry, numTables)
-	if err := binary.Read(buf, binary.BigEndian, offsetTable); err != nil {
+	sr = io.NewSectionReader(r, headerOffset+headerSize, int64(binary.Size(offsetTable)))
+	if err := binary.Read(sr, binary.BigEndian, offsetTable); err != nil {
 		return nil, err
 	}
-	table := make(map[string]Table)
+	tableMap := make(map[string]Table)
 	for _, entry := range offsetTable {
-		start := entry.Offset
-		end := start + entry.Length
-		table[string(entry.Tag[:])] = NewTable(entry.Tag, blob[start:end])
+		tag := string(entry.Tag[:])
+		offset := int64(entry.Offset)
+		size := int64(entry.Length)
+		if v, ok := table[offset]; ok {
+			tableMap[tag] = v
+		} else {
+			v = NewTable(entry.Tag, io.NewSectionReader(r, offset, size))
+			table[offset] = v
+			tableMap[tag] = v
+		}
 	}
-	o.Tables = table
+	o.Table = tableMap
 	return o, nil
 }
 
-func ReadOTF(r io.Reader) (OTF, error) {
-	blob, err := ioutil.ReadAll(r)
-	if err != nil {
+func ReadOTF(r io.ReaderAt) (OTF, error) {
+	tag := make([]byte, 4)
+	if _, err := r.ReadAt(tag, 0); err != nil {
 		return nil, err
 	}
-	if string(blob[0:4]) == string(TAG_TTC[:]) {
-		return parseTTC(blob)
+	if string(tag) == string(TAG_TTC[:]) {
+		return parseTTC(r)
 	}
-	o, err := parseSFNT(blob, blob)
+	o, err := parseSFNT(r, 0, make(map[int64]Table))
 	if err != nil {
 		return nil, err
 	}
