@@ -1,14 +1,14 @@
 package otf
 
-type TTCHeader_1_0 struct {
-	TTCTag      TAG
-	Version     FIXED
-	NumFonts    ULONG
-	OffsetTable []ULONG
+type TTCHeader struct {
+	TTCTag   TAG
+	Version  FIXED
+	NumFonts ULONG
 }
 
+type TTCOffsetTable []ULONG
+
 type TTCHeader_2_0 struct {
-	TTCHeader_1_0
 	UIDsigTag    ULONG
 	UIDsigLength ULONG
 	UIDsigOffset ULONG

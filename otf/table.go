@@ -25,6 +25,5 @@ type Table interface {
 }
 
 type Subtable interface {
-	Len() ULONG
 	Bytes() []byte
 }

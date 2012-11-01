@@ -9,10 +9,6 @@ func (_ *Head) Tag() TAG {
 	return TAG_HEAD
 }
 
-func (t *Head) Len() ULONG {
-	return ULONG(binary.Size(t))
-}
-
 func (t *Head) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, t)
