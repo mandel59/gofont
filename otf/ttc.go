@@ -8,7 +8,7 @@ type TTCHeader struct {
 
 type TTCOffsetTable []ULONG
 
-type TTCHeader_2_0 struct {
+type TTCHeaderDsig struct {
 	UIDsigTag    ULONG
 	UIDsigLength ULONG
 	UIDsigOffset ULONG

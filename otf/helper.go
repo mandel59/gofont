@@ -1,15 +1,12 @@
 package otf
 
-import "encoding/binary"
+import (
+	"time"
+	"encoding/binary"
+)
 
-func roundUp(n int) int {
+func roundUp(n int64) int64 {
 	return (n + 3) &^ 3
-}
-
-func pad(b []byte) []byte {
-	n := len(b)
-	l := roundUp(n) - n
-	return make([]byte, l)
 }
 
 func maxPowerOf2(n USHORT) USHORT {
@@ -31,4 +28,10 @@ func calcCheckSum(t []byte) (s ULONG) {
 		}
 	}
 	return
+}
+
+var epoch = time.Date(1904, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+func longDateTime(t time.Time) LONGDATETIME {
+	return LONGDATETIME(t.Sub(epoch)/time.Second)
 }

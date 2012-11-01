@@ -3,6 +3,7 @@ package otf
 import (
 	"bytes"
 	"encoding/binary"
+	"time"
 )
 
 func (_ *Head) Tag() TAG {
@@ -13,6 +14,11 @@ func (t *Head) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, t)
 	return buf.Bytes()
+}
+
+func (t *Head) Set() {
+	t.CheckSumAdjustment = 0
+	t.Modified = longDateTime(time.Now())
 }
 
 type Head struct {

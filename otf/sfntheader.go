@@ -1,6 +1,6 @@
 package otf
 
-func (t *SfntHeader) Set(version FIXED, numTables USHORT) {
+func (t *SfntHeader) SetNumTables(numTables USHORT) {
 	e := USHORT(maxPowerOf2(numTables))
 	n := USHORT(1 << e)
 	t.NumTables = numTables
