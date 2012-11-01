@@ -1,10 +1,10 @@
 package otf
 
 import (
-	"io"
-	"encoding/binary"
-	"sort"
 	"bytes"
+	"encoding/binary"
+	"io"
+	"sort"
 )
 
 func writeSfntHeader(f *SFNT, w io.WriterAt, offset int64) (ULONG, int64, error) {
@@ -46,7 +46,7 @@ func (f *SFNT) Generate(w io.WriterAt) error {
 			return err
 		}
 		tag = append(tag, ts)
-		entryMap[ts] = &OffsetEntry {
+		entryMap[ts] = &OffsetEntry{
 			t,
 			checksum,
 			ULONG(offset),
@@ -69,9 +69,9 @@ func (f *SFNT) Generate(w io.WriterAt) error {
 	}
 	total += calcCheckSum(bytes)
 	adjust := make([]byte, 4)
-	binary.BigEndian.PutUint32(adjust, uint32(checkSumAdjustmentMagic - total))
+	binary.BigEndian.PutUint32(adjust, uint32(checkSumAdjustmentMagic-total))
 	for _, offs := range head {
-		w.WriteAt(adjust, offs + 8)
+		w.WriteAt(adjust, offs+8)
 	}
 	return nil
 }

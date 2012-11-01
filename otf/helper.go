@@ -1,8 +1,8 @@
 package otf
 
 import (
-	"time"
 	"encoding/binary"
+	"time"
 )
 
 func roundUp(n int64) int64 {
@@ -33,5 +33,5 @@ func calcCheckSum(t []byte) (s ULONG) {
 var epoch = time.Date(1904, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 func longDateTime(t time.Time) LONGDATETIME {
-	return LONGDATETIME(t.Sub(epoch)/time.Second)
+	return LONGDATETIME(t.Sub(epoch) / time.Second)
 }
