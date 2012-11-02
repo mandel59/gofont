@@ -18,6 +18,23 @@ func writeAt(w io.WriterAt, i interface{}, offset int64) (ULONG, int64, error) {
 	return calcCheckSum(bytes), offset + int64(len(bytes)), nil
 }
 
+func setupTables(f SFNT, table *[]Table, tableSet map[Table]bool) error {
+	for k, v := range f {
+		if ts := v.Tag().String(); k != ts {
+			return fmt.Errorf("inconsistent table tag '%s' and '%s'", k, ts)
+		}
+		if _, ok := tableSet[v]; ok {
+			continue
+		}
+		tableSet[v] = true
+		*table = append(*table, v)
+		if ok := v.SetUp(f); !ok {
+			return fmt.Errorf("couldn't set up table '%s'", k)
+		}
+	}
+	return nil
+}
+
 func writeTables(table []Table, w io.WriterAt, offset int64) (map[Table]*OffsetEntry, []int64, ULONG, error) {
 	total := ULONG(0)
 	entryMap := make(map[Table]*OffsetEntry)
@@ -26,8 +43,6 @@ func writeTables(table []Table, w io.WriterAt, offset int64) (map[Table]*OffsetE
 		t := v.Tag()
 		ts := t.String()
 		if ts == "head" {
-			h := v.(*Head)
-			h.Set()
 			head = append(head, offset)
 		}
 		bytes := v.Bytes()
@@ -50,13 +65,8 @@ func writeTables(table []Table, w io.WriterAt, offset int64) (map[Table]*OffsetE
 
 func writeTableDirectory(f SFNT, entryMap map[Table]*OffsetEntry, w io.WriterAt, offset int64) (ULONG, error) {
 	tag := make(sort.StringSlice, 0)
-	for k, v := range f {
-		t := v.Tag()
-		ts := t.String()
-		if k != ts {
-			return 0, fmt.Errorf("inconsistent table tag '%s' and '%s'", k, ts)
-		}
-		tag = append(tag, ts)
+	for k, _ := range f {
+		tag = append(tag, k)
 	}
 	sort.Sort(tag)
 	entry := make([]OffsetEntry, f.NumTables())
@@ -109,8 +119,9 @@ func (f SFNT) GenerateSFNT(w io.WriterAt, header *SfntHeader) error {
 	entry := make([]OffsetEntry, numTables)
 	offset := roundUp(dictOffset + int64(binary.Size(entry)))
 	table := make([]Table, 0)
-	for _, v := range f {
-		table = append(table, v)
+	tableSet := make(map[Table]bool)
+	if err := setupTables(f, &table, tableSet); err != nil {
+		return err
 	}
 	entryMap, head, total, err := writeTables(table, w, offset)
 	if err != nil {

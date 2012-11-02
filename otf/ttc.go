@@ -52,15 +52,12 @@ func (o OTF) GenerateTTC(w io.WriterAt, header TTCHeader) error {
 		if err != nil {
 			return err
 		}
+		if err := setupTables(f, &table, tableSet); err != nil {
+			return err
+		}
 		total += t
 		dictOffset[i] = d
 		offset = roundUp(d + int64(f.NumTables()*binarySizeOffsetEntry))
-		for _, v := range f {
-			if _, ok := tableSet[v]; !ok {
-				tableSet[v] = true
-				table = append(table, v)
-			}
-		}
 	}
 	if t, err := writeFontsOffset(w, offsetOffset, fontsOffset); err == nil {
 		total += t

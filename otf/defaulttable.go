@@ -19,3 +19,7 @@ func (t *DefaultTable) Bytes() []byte {
 	bytes, _ := ioutil.ReadAll(t.reader)
 	return bytes
 }
+
+func (t *DefaultTable) SetUp(f SFNT) bool {
+	return true
+}

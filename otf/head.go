@@ -3,7 +3,17 @@ package otf
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 )
+
+func headParser(r *io.SectionReader) Table {
+	head := new(Head)
+	err := binary.Read(r, binary.BigEndian, head)
+	if err != nil {
+		return nil
+	}
+	return Table(head)
+}
 
 func (_ *Head) Tag() TAG {
 	return TAG_HEAD
@@ -15,8 +25,9 @@ func (t *Head) Bytes() []byte {
 	return buf.Bytes()
 }
 
-func (t *Head) Set() {
+func (t *Head) SetUp(f SFNT) bool {
 	t.CheckSumAdjustment = 0
+	return true
 }
 
 type Head struct {
