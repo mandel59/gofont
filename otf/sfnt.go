@@ -24,7 +24,7 @@ func writeTables(table []Table, w io.WriterAt, offset int64) (map[Table]*OffsetE
 	head := make([]int64, 0)
 	for _, v := range table {
 		t := v.Tag()
-		ts := string(t[:])
+		ts := t.String()
 		if ts == "head" {
 			h := v.(*Head)
 			h.Set()
@@ -52,7 +52,7 @@ func writeTableDirectory(f SFNT, entryMap map[Table]*OffsetEntry, w io.WriterAt,
 	tag := make(sort.StringSlice, 0)
 	for k, v := range f {
 		t := v.Tag()
-		ts := string(t[:])
+		ts := t.String()
 		if k != ts {
 			return 0, fmt.Errorf("inconsistent table tag '%s' and '%s'", k, ts)
 		}

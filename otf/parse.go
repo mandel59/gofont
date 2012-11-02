@@ -45,7 +45,7 @@ func parseSFNT(r io.ReaderAt, headerOffset int64, table map[int64]Table) (SFNT, 
 	}
 	tableMap := make(SFNT)
 	for _, entry := range offsetTable {
-		tag := string(entry.Tag[:])
+		tag := entry.Tag.String()
 		offset := int64(entry.Offset)
 		size := int64(entry.Length)
 		if v, ok := table[offset]; ok {
@@ -66,7 +66,7 @@ func Read(r io.ReaderAt) (OTF, error) {
 	if _, err := r.ReadAt(tag, 0); err != nil {
 		return nil, err
 	}
-	if string(tag) == string(TAG_TTC[:]) {
+	if string(tag) == TAG_TTC.String() {
 		return parseTTC(r)
 	}
 	o, err := parseSFNT(r, 0, make(map[int64]Table))

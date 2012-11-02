@@ -5,9 +5,13 @@ import (
 	"time"
 )
 
-func s_tag(s string) (t TAG) {
+func Tag(s string) (t TAG) {
 	copy(t[0:4], []byte(s[0:4]))
 	return
+}
+
+func (t TAG) String() string {
+	return string(t[:])
 }
 
 func roundUp(n int64) int64 {
@@ -35,8 +39,24 @@ func calcCheckSum(t []byte) (s ULONG) {
 	return
 }
 
+func Fixed(f float64) FIXED {
+	return FIXED(f * 0x10000)
+}
+
+func (f FIXED) Float64() float64 {
+	return float64(f) * (1.0 / 0x10000)
+}
+
+func F2Dot14(f float64) F2DOT14 {
+	return F2DOT14(f * 0x4000)
+}
+
+func (f F2DOT14) Float64() float64 {
+	return float64(f) * (1.0 / 0x4000)
+}
+
 var epoch = time.Date(1904, time.January, 1, 0, 0, 0, 0, time.UTC)
 
-func longDateTime(t time.Time) LONGDATETIME {
+func LongDateTime(t time.Time) LONGDATETIME {
 	return LONGDATETIME(t.Sub(epoch) / time.Second)
 }
