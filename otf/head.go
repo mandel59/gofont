@@ -3,7 +3,6 @@ package otf
 import (
 	"bytes"
 	"encoding/binary"
-	"time"
 )
 
 func (_ *Head) Tag() TAG {
@@ -18,7 +17,6 @@ func (t *Head) Bytes() []byte {
 
 func (t *Head) Set() {
 	t.CheckSumAdjustment = 0
-	t.Modified = longDateTime(time.Now())
 }
 
 type Head struct {
