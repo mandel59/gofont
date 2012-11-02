@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+func s_tag(s string) (t TAG) {
+	copy(t[0:4], []byte(s[0:4]))
+	return
+}
+
 func roundUp(n int64) int64 {
 	return (n + 3) &^ 3
 }

@@ -60,7 +60,9 @@ func parseSFNT(r io.ReaderAt, headerOffset int64, table map[int64]Table) (*SFNT,
 	return o, nil
 }
 
-func ReadOTF(r io.ReaderAt) (OTF, error) {
+// Read reads Open Font File from io.ReaderAt.
+// It returns OTF and any read error encountered.
+func Read(r io.ReaderAt) (OTF, error) {
 	tag := make([]byte, 4)
 	if _, err := r.ReadAt(tag, 0); err != nil {
 		return nil, err

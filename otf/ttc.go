@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
-	"sort"
 )
 
 type TTCHeader struct {
@@ -23,13 +22,7 @@ type TTCHeaderDsig struct {
 
 var TAG_TTC TAG = TAG{'t', 't', 'c', 'f'}
 
-func writeTTCHeader(o OTF, w io.WriterAt) (ULONG, int64, error) {
-	numFonts := len(o)
-	header := TTCHeader{
-		TAG_TTC,
-		VERSION_1_0,
-		ULONG(numFonts),
-	}
+func writeTTCHeader(o OTF, w io.WriterAt, header TTCHeader) (ULONG, int64, error) {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, header)
 	bytes := buf.Bytes()
@@ -49,8 +42,10 @@ func writeFontsOffset(w io.WriterAt, offset int64, fonts TTCOffsetTable) (ULONG,
 	return calcCheckSum(bytes), nil
 }
 
-func (o OTF) GenerateTTC(w io.WriterAt) error {
-	total, offset, err := writeTTCHeader(o, w)
+var binarySizeOffsetEntry = binary.Size(OffsetEntry{})
+
+func (o OTF) GenerateTTC(w io.WriterAt, header TTCHeader) error {
+	total, offset, err := writeTTCHeader(o, w, header)
 	if err != nil {
 		return err
 	}
@@ -59,7 +54,6 @@ func (o OTF) GenerateTTC(w io.WriterAt) error {
 	fontsOffset := make(TTCOffsetTable, numFonts)
 	offset += int64(binary.Size(fontsOffset))
 	dictOffset := make([]int64, numFonts)
-	entry := make([][]OffsetEntry, numFonts)
 	table := make([]Table, 0)
 	tableSet := make(map[Table]bool)
 	for i, f := range o {
@@ -70,10 +64,7 @@ func (o OTF) GenerateTTC(w io.WriterAt) error {
 		}
 		total += t
 		dictOffset[i] = d
-		numTables := len(f.Table)
-		e := make([]OffsetEntry, numTables)
-		entry[i] = e
-		offset = roundUp(d + int64(binary.Size(e)))
+		offset = roundUp(d + int64(len(f.Table) * binarySizeOffsetEntry))
 		for _, v := range f.Table {
 			if _, ok := tableSet[v]; !ok {
 				tableSet[v] = true
@@ -90,24 +81,12 @@ func (o OTF) GenerateTTC(w io.WriterAt) error {
 	if err != nil {
 		return err
 	}
-	// write table directory
 	for i, f := range o {
-		tag := make(sort.StringSlice, 0)
-		for _, v := range f.Table {
-			t := v.Tag()
-			tag = append(tag, string(t[:]))
-		}
-		sort.Sort(tag)
-		for j, ts := range tag {
-			entry[i][j] = *(entryMap[f.Table[ts]])
-		}
-		buf := new(bytes.Buffer)
-		binary.Write(buf, binary.BigEndian, entry[i])
-		bytes := buf.Bytes()
-		if _, err := w.WriteAt(bytes, dictOffset[i]); err != nil {
+		cs, err := writeTableDirectory(f, entryMap, w, dictOffset[i])
+		if err != nil {
 			return err
 		}
-		total += calcCheckSum(bytes)
+		total += cs
 	}
 	checkSumAdjust(w, head, total)
 	return nil

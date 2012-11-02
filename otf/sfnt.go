@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"io"
 	"sort"
+	"fmt"
 )
 
 func writeSfntHeader(f *SFNT, w io.WriterAt, offset int64) (ULONG, int64, error) {
@@ -49,6 +50,30 @@ func writeTables(table []Table, w io.WriterAt, offset int64) (map[Table]*OffsetE
 	return entryMap, head, total, nil
 }
 
+func writeTableDirectory(f *SFNT, entryMap map[Table]*OffsetEntry, w io.WriterAt, offset int64) (ULONG, error) {
+	tag := make(sort.StringSlice, 0)
+	for k, v := range f.Table {
+		t := v.Tag()
+		ts := string(t[:])
+		if k != ts {
+			return 0, fmt.Errorf("inconsistent table tag '%s' and '%s'", k, ts)
+		}
+		tag = append(tag, ts)
+	}
+	sort.Sort(tag)
+	entry := make([]OffsetEntry, len(f.Table))
+	for i, ts := range tag {
+		entry[i] = *(entryMap[f.Table[ts]])
+	}
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, entry)
+	bytes := buf.Bytes()
+	if _, err := w.WriteAt(bytes, offset); err != nil {
+		return 0, err
+	}
+	return calcCheckSum(bytes), nil
+}
+
 func checkSumAdjust(w io.WriterAt, head []int64, checksum ULONG) {
 	adjust := make([]byte, 4)
 	binary.BigEndian.PutUint32(adjust, uint32(checkSumAdjustmentMagic-checksum))
@@ -73,28 +98,17 @@ func (f *SFNT) Generate(w io.WriterAt) error {
 	if err != nil {
 		return err
 	}
-	// write table directory
-	offset = dictOffset
-	tag := make(sort.StringSlice, 0)
-	for _, v := range f.Table {
-		t := v.Tag()
-		tag = append(tag, string(t[:]))
-	}
-	sort.Sort(tag)
-	for i, ts := range tag {
-		entry[i] = *(entryMap[f.Table[ts]])
-	}
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, entry)
-	bytes := buf.Bytes()
-	if _, err := w.WriteAt(bytes, offset); err != nil {
+	cs, err := writeTableDirectory(f, entryMap, w, dictOffset)
+	if err != nil {
 		return err
 	}
-	total += calcCheckSum(bytes)
+	total += cs
 	checkSumAdjust(w, head, total)
 	return nil
 }
 
+// SFNT is the pair of SfntHeader and map[string]Table.
+// The keys of the map are table tag
 type SFNT struct {
 	Header SfntHeader
 	Table  map[string]Table
