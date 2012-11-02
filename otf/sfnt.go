@@ -3,16 +3,14 @@ package otf
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"sort"
-	"fmt"
 )
 
-func writeSfntHeader(f *SFNT, w io.WriterAt, offset int64) (ULONG, int64, error) {
-	numTables := len(f.Table)
-	f.Header.SetNumTables(USHORT(numTables))
+func writeAt(w io.WriterAt, i interface{}, offset int64) (ULONG, int64, error) {
 	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, f.Header)
+	binary.Write(buf, binary.BigEndian, i)
 	bytes := buf.Bytes()
 	if _, err := w.WriteAt(bytes, offset); err != nil {
 		return 0, 0, err
@@ -50,9 +48,9 @@ func writeTables(table []Table, w io.WriterAt, offset int64) (map[Table]*OffsetE
 	return entryMap, head, total, nil
 }
 
-func writeTableDirectory(f *SFNT, entryMap map[Table]*OffsetEntry, w io.WriterAt, offset int64) (ULONG, error) {
+func writeTableDirectory(f SFNT, entryMap map[Table]*OffsetEntry, w io.WriterAt, offset int64) (ULONG, error) {
 	tag := make(sort.StringSlice, 0)
-	for k, v := range f.Table {
+	for k, v := range f {
 		t := v.Tag()
 		ts := string(t[:])
 		if k != ts {
@@ -61,9 +59,9 @@ func writeTableDirectory(f *SFNT, entryMap map[Table]*OffsetEntry, w io.WriterAt
 		tag = append(tag, ts)
 	}
 	sort.Sort(tag)
-	entry := make([]OffsetEntry, len(f.Table))
+	entry := make([]OffsetEntry, f.NumTables())
 	for i, ts := range tag {
-		entry[i] = *(entryMap[f.Table[ts]])
+		entry[i] = *(entryMap[f[ts]])
 	}
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, entry)
@@ -82,16 +80,36 @@ func checkSumAdjust(w io.WriterAt, head []int64, checksum ULONG) {
 	}
 }
 
-func (f *SFNT) Generate(w io.WriterAt) error {
-	total, dictOffset, err := writeSfntHeader(f, w, 0)
+func (f SFNT) NumTables() int {
+	return len(f)
+}
+
+func (f SFNT) WithCFF() bool {
+	_, ok := f["CFF "]
+	return ok
+}
+
+func (f SFNT) Header() *SfntHeader {
+	h := new(SfntHeader)
+	if f.WithCFF() {
+		h.SfntVersion = VERSION_CFF
+	} else {
+		h.SfntVersion = VERSION_1_0
+	}
+	h.SetNumTables(USHORT(f.NumTables()))
+	return h
+}
+
+func (f SFNT) GenerateSFNT(w io.WriterAt, header *SfntHeader) error {
+	total, dictOffset, err := writeAt(w, header, 0)
 	if err != nil {
 		return err
 	}
-	numTables := len(f.Table)
+	numTables := f.NumTables()
 	entry := make([]OffsetEntry, numTables)
 	offset := roundUp(dictOffset + int64(binary.Size(entry)))
 	table := make([]Table, 0)
-	for _, v := range f.Table {
+	for _, v := range f {
 		table = append(table, v)
 	}
 	entryMap, head, total, err := writeTables(table, w, offset)
@@ -107,11 +125,12 @@ func (f *SFNT) Generate(w io.WriterAt) error {
 	return nil
 }
 
-// SFNT is the pair of SfntHeader and map[string]Table.
-// The keys of the map are table tag
-type SFNT struct {
-	Header SfntHeader
-	Table  map[string]Table
+func (f SFNT) Generate(w io.WriterAt) error {
+	header := f.Header()
+	return f.GenerateSFNT(w, header)
 }
+
+// SFNT maps table tag to Table
+type SFNT map[string]Table
 
 const checkSumAdjustmentMagic = 0xB1B0AFBA

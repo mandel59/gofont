@@ -22,16 +22,6 @@ type TTCHeaderDsig struct {
 
 var TAG_TTC TAG = TAG{'t', 't', 'c', 'f'}
 
-func writeTTCHeader(o OTF, w io.WriterAt, header TTCHeader) (ULONG, int64, error) {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, header)
-	bytes := buf.Bytes()
-	if _, err := w.WriteAt(bytes, 0); err != nil {
-		return 0, 0, err
-	}
-	return calcCheckSum(bytes), int64(len(bytes)), nil
-}
-
 func writeFontsOffset(w io.WriterAt, offset int64, fonts TTCOffsetTable) (ULONG, error) {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, fonts)
@@ -45,7 +35,7 @@ func writeFontsOffset(w io.WriterAt, offset int64, fonts TTCOffsetTable) (ULONG,
 var binarySizeOffsetEntry = binary.Size(OffsetEntry{})
 
 func (o OTF) GenerateTTC(w io.WriterAt, header TTCHeader) error {
-	total, offset, err := writeTTCHeader(o, w, header)
+	total, offset, err := writeAt(w, header, 0)
 	if err != nil {
 		return err
 	}
@@ -58,14 +48,14 @@ func (o OTF) GenerateTTC(w io.WriterAt, header TTCHeader) error {
 	tableSet := make(map[Table]bool)
 	for i, f := range o {
 		fontsOffset[i] = ULONG(offset)
-		t, d, err := writeSfntHeader(f, w, offset)
+		t, d, err := writeAt(w, f.Header(), offset)
 		if err != nil {
 			return err
 		}
 		total += t
 		dictOffset[i] = d
-		offset = roundUp(d + int64(len(f.Table) * binarySizeOffsetEntry))
-		for _, v := range f.Table {
+		offset = roundUp(d + int64(f.NumTables()*binarySizeOffsetEntry))
+		for _, v := range f {
 			if _, ok := tableSet[v]; !ok {
 				tableSet[v] = true
 				table = append(table, v)

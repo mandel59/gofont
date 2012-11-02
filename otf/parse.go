@@ -18,7 +18,7 @@ func parseTTC(r io.ReaderAt) (OTF, error) {
 	if err := binary.Read(sr, binary.BigEndian, offsetTable); err != nil {
 		return nil, err
 	}
-	o := make([]*SFNT, numFonts)
+	o := make([]SFNT, numFonts)
 	table := make(map[int64]Table)
 	for i, offset := range offsetTable {
 		var err error
@@ -30,20 +30,20 @@ func parseTTC(r io.ReaderAt) (OTF, error) {
 	return o, nil
 }
 
-func parseSFNT(r io.ReaderAt, headerOffset int64, table map[int64]Table) (*SFNT, error) {
-	o := new(SFNT)
-	headerSize := int64(binary.Size(o.Header))
+func parseSFNT(r io.ReaderAt, headerOffset int64, table map[int64]Table) (SFNT, error) {
+	header := new(SfntHeader)
+	headerSize := int64(binary.Size(header))
 	sr := io.NewSectionReader(r, headerOffset, headerSize)
-	if err := binary.Read(sr, binary.BigEndian, &o.Header); err != nil {
+	if err := binary.Read(sr, binary.BigEndian, header); err != nil {
 		return nil, err
 	}
-	numTables := o.Header.NumTables
+	numTables := header.NumTables
 	offsetTable := make([]OffsetEntry, numTables)
 	sr = io.NewSectionReader(r, headerOffset+headerSize, int64(binary.Size(offsetTable)))
 	if err := binary.Read(sr, binary.BigEndian, offsetTable); err != nil {
 		return nil, err
 	}
-	tableMap := make(map[string]Table)
+	tableMap := make(SFNT)
 	for _, entry := range offsetTable {
 		tag := string(entry.Tag[:])
 		offset := int64(entry.Offset)
@@ -56,8 +56,7 @@ func parseSFNT(r io.ReaderAt, headerOffset int64, table map[int64]Table) (*SFNT,
 			tableMap[tag] = v
 		}
 	}
-	o.Table = tableMap
-	return o, nil
+	return tableMap, nil
 }
 
 // Read reads Open Font File from io.ReaderAt.
@@ -74,5 +73,5 @@ func Read(r io.ReaderAt) (OTF, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []*SFNT{o}, nil
+	return OTF{o}, nil
 }

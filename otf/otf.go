@@ -3,7 +3,7 @@ package otf
 import "io"
 
 // OTF attaches the methods of Interface to []*SFNT
-type OTF []*SFNT
+type OTF []SFNT
 
 func (o OTF) Generate(w io.WriterAt) error {
 	if len(o) == 1 {
