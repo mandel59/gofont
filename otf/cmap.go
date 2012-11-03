@@ -1,12 +1,32 @@
 package otf
 
+import "io"
+
 type Cmap struct {
-	CmapHeader
-	EncodingRecord []EncodingRecord
-	Subtables      []CmapSubtable
+	Version  USHORT
+	Subtable []CmapSubtable
 }
 
-type CmapSubtable Subtable
+type CmapSubtable struct {
+	PlatformID
+	EncodingID
+	io.ReadSeeker
+}
+
+func (t *CmapSubtable) Size() int64 {
+	n, err := t.Seek(0, 2)
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+func (t *CmapSubtable) Bytes() []byte {
+	bytes := make([]byte, t.Size())
+	t.Seek(0, 0)
+	t.Read(bytes)
+	return bytes
+}
 
 type CmapHeader struct {
 	Version   USHORT
@@ -19,16 +39,25 @@ type EncodingRecord struct {
 	Offset ULONG
 }
 
+type CmapShortSubtable struct {
+	Format USHORT
+	Length USHORT
+}
+
+type CmapLongSubtable struct {
+	Format USHORT
+	_      USHORT
+	Length ULONG
+}
+
 type CmapFormat0 struct {
-	Format       USHORT
-	Length       USHORT
+	CmapShortSubtable
 	Language     USHORT
 	GlyphIdArray [256]BYTE
 }
 
 type CmapFormat2 struct {
-	Format          USHORT
-	Length          USHORT
+	CmapShortSubtable
 	Language        USHORT
 	SubHeaderKeys   [256]USHORT
 	SubHeaders      []CmapFormat2SubHeader
@@ -43,8 +72,7 @@ type CmapFormat2SubHeader struct {
 }
 
 type CmapFormat4 struct {
-	Format        USHORT
-	Length        USHORT
+	CmapShortSubtable
 	Language      USHORT
 	SegCountX2    USHORT
 	SearchRange   USHORT
@@ -59,8 +87,7 @@ type CmapFormat4 struct {
 }
 
 type CmapFormat6 struct {
-	Format       USHORT
-	Length       USHORT
+	CmapShortSubtable
 	Language     USHORT
 	FirstCode    USHORT
 	EntryCount   USHORT
@@ -68,9 +95,7 @@ type CmapFormat6 struct {
 }
 
 type CmapFormat8 struct {
-	Format   USHORT
-	_        USHORT
-	Length   ULONG
+	CmapLongSubtable
 	Language ULONG
 	Is32     [8192]BYTE
 	NGroups  ULONG
@@ -84,9 +109,7 @@ type CmapFormat8Group struct {
 }
 
 type CmapFormat10 struct {
-	Format        USHORT
-	_             USHORT
-	Length        ULONG
+	CmapLongSubtable
 	Language      ULONG
 	StartCharCode ULONG
 	NumChars      ULONG
@@ -94,9 +117,7 @@ type CmapFormat10 struct {
 }
 
 type CmapFormat12 struct {
-	Format   USHORT
-	_        USHORT
-	Length   ULONG
+	CmapLongSubtable
 	Language ULONG
 	NGroups  ULONG
 	Groups   []CmapFormat12Group
@@ -109,9 +130,7 @@ type CmapFormat12Group struct {
 }
 
 type CmapFormat13 struct {
-	Format   USHORT
-	_        USHORT
-	Length   ULONG
+	CmapLongSubtable
 	Language ULONG
 	NGroups  ULONG
 	Groups   []CmapFormat13Group
@@ -157,3 +176,5 @@ type UVSMapping struct {
 	UnicodeValue UINT24
 	GlyphID      USHORT
 }
+
+var TAG_CMAP = TAG{'c', 'm', 'a', 'p'}

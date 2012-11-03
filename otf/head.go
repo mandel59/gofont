@@ -25,9 +25,10 @@ func (t *Head) Bytes() []byte {
 	return buf.Bytes()
 }
 
-func (t *Head) SetUp(f SFNT) bool {
+func (t *Head) SetUp(f SFNT) error {
 	t.CheckSumAdjustment = 0
-	return true
+	// FIXME: it must be implemented
+	return nil
 }
 
 type Head struct {

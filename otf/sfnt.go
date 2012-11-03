@@ -28,8 +28,8 @@ func setupTables(f SFNT, table *[]Table, tableSet map[Table]bool) error {
 		}
 		tableSet[v] = true
 		*table = append(*table, v)
-		if ok := v.SetUp(f); !ok {
-			return fmt.Errorf("couldn't set up table '%s'", k)
+		if err := v.SetUp(f); err != nil {
+			return err
 		}
 	}
 	return nil

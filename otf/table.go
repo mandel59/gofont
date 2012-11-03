@@ -8,7 +8,9 @@ type TableParserFunc func(r *io.SectionReader) Table
 type TableParser map[TAG]TableParserFunc
 
 var DefaultParser = TableParser{
+	TAG_CMAP: cmapParser,
 	TAG_HEAD: headParser,
+	TAG_OS_2: os_2Parser,
 }
 
 func (parser TableParser) Parse(t TAG, r *io.SectionReader) Table {
@@ -29,7 +31,7 @@ func NewTable(t TAG, r *io.SectionReader) Table {
 type Table interface {
 	Subtable
 	Tag() TAG
-	SetUp(f SFNT) bool
+	SetUp(f SFNT) error
 }
 
 type Subtable interface {

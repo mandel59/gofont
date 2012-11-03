@@ -20,6 +20,6 @@ func (t *DefaultTable) Bytes() []byte {
 	return bytes
 }
 
-func (t *DefaultTable) SetUp(f SFNT) bool {
-	return true
+func (_ *DefaultTable) SetUp(f SFNT) error {
+	return nil
 }

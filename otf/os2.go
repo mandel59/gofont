@@ -1,5 +1,35 @@
 package otf
 
+import (
+	"bytes"
+	"encoding/binary"
+	"io"
+)
+
+func os_2Parser(r *io.SectionReader) Table {
+	os_2 := new(OS_2)
+	err := binary.Read(r, binary.BigEndian, os_2)
+	if err != nil {
+		return nil
+	}
+	return Table(os_2)
+}
+
+func (_ *OS_2) Tag() TAG {
+	return TAG_OS_2
+}
+
+func (t *OS_2) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, t)
+	return buf.Bytes()
+}
+
+func (t *OS_2) SetUp(f SFNT) error {
+	// FIXME: it must be implemented
+	return nil
+}
+
 type OS_2 struct {
 	Version             USHORT
 	XAvgCharWidth       SHORT
@@ -52,3 +82,5 @@ type Panose struct {
 	BMidline         BYTE
 	BXHeight         BYTE
 }
+
+var TAG_OS_2 = TAG{'O', 'S', '/', '2'}
