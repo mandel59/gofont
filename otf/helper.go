@@ -1,6 +1,7 @@
 package otf
 
 import (
+	"bytes"
 	"encoding/binary"
 	"time"
 )
@@ -59,4 +60,10 @@ var epoch = time.Date(1904, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 func LongDateTime(t time.Time) LONGDATETIME {
 	return LONGDATETIME(t.Sub(epoch) / time.Second)
+}
+
+func DumpBigEndian(data interface{}) []byte {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, data)
+	return buf.Bytes()
 }

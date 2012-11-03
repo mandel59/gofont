@@ -1,7 +1,6 @@
 package otf
 
 import (
-	"bytes"
 	"encoding/binary"
 	"io"
 )
@@ -20,9 +19,7 @@ func (_ *OS_2) Tag() TAG {
 }
 
 func (t *OS_2) Bytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, t)
-	return buf.Bytes()
+	return DumpBigEndian(t)
 }
 
 func (t *OS_2) SetUp(f SFNT) error {
