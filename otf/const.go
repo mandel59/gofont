@@ -8,7 +8,7 @@ const (
 
 // Platform IDs
 const (
-	PLATFORM_UNICODE = iota
+	PLATFORM_UNICODE PlatformID = iota
 	PLATFORM_MACINTOSH
 	PLATFORM_ISO
 	PLATFORM_WINDOWS
@@ -17,7 +17,7 @@ const (
 
 // Unicode platform-specific encoding IDs (platform ID = 0)
 const (
-	UNICODE_1_0 = iota
+	UNICODE_1_0 EncodingID = iota
 	UNICODE_1_1
 	ISO_IEC_10646
 	UNICODE_BMP
@@ -27,7 +27,7 @@ const (
 
 // Windows platform-specific encoding IDs (platform ID = 3)
 const (
-	WINDOWS_SYMBOL = iota
+	WINDOWS_SYMBOL EncodingID = iota
 	WINDOWS_UCS2
 	WINDOWS_SJIS
 	WINDOWS_PRC
@@ -42,7 +42,7 @@ const (
 
 // Macintosh platform-specific encoding IDs (platform ID = 1)
 const (
-	MACINTOSH_ROMAN = iota
+	MACINTOSH_ROMAN EncodingID = iota
 	MACINTOSH_JAPANESE
 	MACINTOSH_CHINESE_TRAD
 	MACINTOSH_KOREAN
