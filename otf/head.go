@@ -1,18 +1,11 @@
 package otf
 
 import (
-	"bytes"
-	"encoding/binary"
 	"io"
 )
 
-func headParser(r *io.SectionReader) Table {
-	head := new(Head)
-	err := binary.Read(r, binary.BigEndian, head)
-	if err != nil {
-		return nil
-	}
-	return Table(head)
+func headParser(_ SFNT, r *io.SectionReader) Table {
+	return ReadTable(r, new(Head))
 }
 
 func (_ *Head) Tag() TAG {
@@ -20,9 +13,7 @@ func (_ *Head) Tag() TAG {
 }
 
 func (t *Head) Bytes() []byte {
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, t)
-	return buf.Bytes()
+	return DumpBigEndian(t)
 }
 
 func (t *Head) SetUp(f SFNT) error {
@@ -50,7 +41,5 @@ type Head struct {
 	IndexToLocFormat   SHORT
 	GlyphDataFormat    SHORT
 }
-
-var TAG_HEAD = TAG{'h', 'e', 'a', 'd'}
 
 const HEAD_MAGIC_NUMBER ULONG = 0x5F0F3CF5

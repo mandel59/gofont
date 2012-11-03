@@ -20,8 +20,6 @@ type TTCHeaderDsig struct {
 	UIDsigOffset ULONG
 }
 
-var TAG_TTC TAG = TAG{'t', 't', 'c', 'f'}
-
 func writeFontsOffset(w io.WriterAt, offset int64, fonts TTCOffsetTable) (ULONG, error) {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, fonts)

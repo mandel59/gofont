@@ -21,5 +21,3 @@ type CmapSubtable struct {
 	EncodingID
 	Subtable
 }
-
-var TAG_CMAP = TAG{'c', 'm', 'a', 'p'}

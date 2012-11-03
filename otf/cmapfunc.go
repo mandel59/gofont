@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-func cmapParser(r *io.SectionReader) Table {
+func cmapParser(_ SFNT, r *io.SectionReader) Table {
 	t := new(Cmap)
 	header := CmapHeader{}
 	if err := binary.Read(r, binary.BigEndian, &header); err != nil {

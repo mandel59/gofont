@@ -1,17 +1,11 @@
 package otf
 
 import (
-	"encoding/binary"
 	"io"
 )
 
-func os_2Parser(r *io.SectionReader) Table {
-	os_2 := new(OS_2)
-	err := binary.Read(r, binary.BigEndian, os_2)
-	if err != nil {
-		return nil
-	}
-	return Table(os_2)
+func os_2Parser(_ SFNT, r *io.SectionReader) Table {
+	return ReadTable(r, new(OS_2))
 }
 
 func (_ *OS_2) Tag() TAG {
@@ -79,5 +73,3 @@ type Panose struct {
 	BMidline         BYTE
 	BXHeight         BYTE
 }
-
-var TAG_OS_2 = TAG{'O', 'S', '/', '2'}

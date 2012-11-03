@@ -5,6 +5,39 @@ import (
 	"io"
 )
 
+type TableParserFunc func(f SFNT, r *io.SectionReader) Table
+type TableParser map[TAG]TableParserFunc
+
+var stage0 = TableParser{
+	TAG_CMAP: cmapParser,
+	TAG_HEAD: headParser,
+	TAG_OS_2: os_2Parser,
+	TAG_HHEA: hheaParser,
+}
+
+var stage1 = TableParser{
+	//TAG_HMTX: hmtxParser,
+}
+
+var DefaultParser = []TableParser {
+	stage0,
+	stage1,
+}
+
+func (parser TableParser) Parse(f SFNT, t Table) Table {
+	tag := t.Tag()
+	if parser, ok := parser[tag]; ok {
+		if d, ok := t.(*DefaultTable); ok {
+			r := d.Reader()
+			r.Seek(0, 0)
+			if p := parser(f, r); p != nil {
+				return p
+			}
+		}
+	}
+	return t
+}
+
 func parseTTC(r io.ReaderAt) (OTF, error) {
 	ttcHeader := new(TTCHeader)
 	ttcHeaderSize := int64(binary.Size(ttcHeader))
@@ -51,9 +84,14 @@ func parseSFNT(r io.ReaderAt, headerOffset int64, table map[int64]Table) (SFNT, 
 		if v, ok := table[offset]; ok {
 			tableMap[tag] = v
 		} else {
-			v = NewTable(entry.Tag, io.NewSectionReader(r, offset, size))
+			v = &DefaultTable{entry.Tag, io.NewSectionReader(r, offset, size)}
 			table[offset] = v
 			tableMap[tag] = v
+		}
+	}
+	for _, p := range DefaultParser {
+		for i, v := range tableMap {
+			tableMap[i] = p.Parse(tableMap, v)
 		}
 	}
 	return tableMap, nil

@@ -14,6 +14,10 @@ func (t *DefaultTable) Tag() TAG {
 	return t.tag
 }
 
+func (t *DefaultTable) Reader() *io.SectionReader {
+	return t.reader
+}
+
 func (t *DefaultTable) Bytes() []byte {
 	t.reader.Seek(0, 0)
 	bytes, _ := ioutil.ReadAll(t.reader)

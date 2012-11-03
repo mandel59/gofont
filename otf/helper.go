@@ -3,6 +3,7 @@ package otf
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 	"time"
 )
 
@@ -66,4 +67,19 @@ func DumpBigEndian(data interface{}) []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, data)
 	return buf.Bytes()
+}
+
+func DumpSlice(data []interface{}) []byte {
+	buf := new(bytes.Buffer)
+	for _, v := range data {
+		binary.Write(buf, binary.BigEndian, v)
+	}
+	return buf.Bytes()
+}
+
+func ReadTable(r io.Reader, t Table) Table {
+	if err := binary.Read(r, binary.BigEndian, t); err != nil {
+		return nil
+	}
+	return t
 }
