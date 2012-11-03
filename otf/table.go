@@ -29,11 +29,12 @@ func NewTable(t TAG, r *io.SectionReader) Table {
 }
 
 type Table interface {
-	Subtable
+	Bytes() []byte
 	Tag() TAG
 	SetUp(f SFNT) error
 }
 
 type Subtable interface {
 	Bytes() []byte
+	Size() int64
 }

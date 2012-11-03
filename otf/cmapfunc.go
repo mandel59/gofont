@@ -38,7 +38,7 @@ func cmapParser(r *io.SectionReader) Table {
 			return nil
 		}
 		sr := io.NewSectionReader(r, offset, length)
-		t.Subtable[i] = CmapSubtable{pid, eid, sr}
+		t.Subtable[i] = CmapSubtable{pid, eid, &SubtableReader{sr}}
 	}
 	return Table(t)
 }
